@@ -51,6 +51,7 @@ pre-project for flask-ci-demo project
    $ mkdir /flask-dev
    $ cd /flask-dev
    ```
+   
 2. 创建一个最小的flask-web服务
    ```
    from flask import Flask
@@ -61,6 +62,7 @@ pre-project for flask-ci-demo project
        return 'Hello, World!'
    ```
    将以上代码在flask-dev目录下保存为app.py
+   
 3. 回到home目录下面编写Dockerfile构建
    ```
    FROM python:3.8.1
@@ -80,6 +82,7 @@ pre-project for flask-ci-demo project
    ```
    $ docker run --name=app flask:dev
    ```
+   
 4. 构建nginx
    创建nginx目录
    ```
@@ -112,5 +115,39 @@ pre-project for flask-ci-demo project
    $ docker run -p 80:80 --link app
    ```
    至此，已经可以通过网络进行服务器访问了。
+   
 5. 访问web网站
    单独拿出来说一下，在ECS环境中，访问控制需要在服务商提供的管理控制台里面配置。对于阿里云内网环境，则是进入到控制台，选择对应的实例，然后对实例进行安全组配置。只有在同一个安全组内的内网IP的机器才能成功访问。如果是公网环境访问，需要额外购买公网地址。
+   
+# 组件化部署
+1. 项目目录结构
+   ```
+   │  .gitignore
+   │  LICENSE
+   │  list.txt
+   │  README.md
+   │  
+   ├─flask-dev
+   │      app.py
+   │      Dockerfile
+   │      requirements.txt
+   │      
+   └─nginx-dev
+          Dockerfile
+          nginx.conf
+   ```
+2. /flask-dev/Dockerfile
+   ```
+   FROM python:3.8.1
+   COPY ./flask-dev ./flask-dev
+   workdir ./flask-dev
+   ENV FLASK_APP app.py
+   ENV FLASK_RUN_HOST 0.0.0.0
+   RUN pip install -r requirements.txt
+   CMD ["flask", "run"]
+   ```
+3. /nginx-dev/Dockerfile
+   ```
+   FROM nginx
+   COPY ./nginx-test/conf.d/default.conf /etc/nginx/nginx.conf
+   ```
