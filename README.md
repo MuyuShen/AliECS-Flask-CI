@@ -149,7 +149,7 @@ pre-project for flask-ci-demo project
 3. /nginx-dev/Dockerfile
    ```
    FROM nginx
-   COPY ./nginx-test/conf.d/default.conf /etc/nginx/nginx.conf
+   COPY ./nginx-dev/nginx.conf /etc/nginx/nginx.conf
    ```
 
 4. docker-compose安装
