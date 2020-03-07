@@ -151,3 +151,38 @@ pre-project for flask-ci-demo project
    FROM nginx
    COPY ./nginx-test/conf.d/default.conf /etc/nginx/nginx.conf
    ```
+
+4. docker-compose安装
+
+   https://docs.docker.com/compose/install/#install-compose-on-linux-systems
+
+   官方安装说明如上，内容太长，简单来说就是系统安装pip，然后再用pip安装docker-compose。
+
+   在安装时注意，python-dev在centos中的名称是python-devel，必须先安装python-devel，否则pip不能顺利安装docker-compose。
+
+   ```
+   $ sudo yum install pip
+   $ sudo yum install python-devel
+   $ pip install docker-compose
+   ```
+
+5. 定义组件服务
+
+   ```
+   version: '3'
+   services:
+     web:
+       build: ./flask-dev
+       ports:
+         - "5000:5000"
+     nginx:
+       build: ./nginx-dev
+       ports:
+         - "80:80"
+   ```
+
+   
+
+   
+
+   
