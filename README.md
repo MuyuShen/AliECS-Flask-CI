@@ -381,4 +381,38 @@ pre-project for flask-ci-demo project
        * Running on http://0.0.0.0:5000/ (Press CTRL+C to quit)
       ```
 
-      
+   # CI中篇 - 实践：对接OSS的图片功能
+
+     1. 开始
+
+        因为是在云服务器上开发，从快速上手和功能拆分的角度考虑，一般会利用厂商提供的对象存储服务来进行文件的管理。
+
+        阿里云对接OSS的模块为oss2，只需要通过pip下载即可。
+
+        ```
+        $ pip install -i https://mirrors.aliyun.com/pypi/simple/ oss2
+        ```
+
+        OSS的付费方式选择按量计费，会按照使用的存储大小和流量来计价。
+
+        开通步骤如下：
+
+        ```
+        登录阿里云官网。
+        将鼠标移至产品，单击对象存储 OSS，打开 OSS 产品详情页面。
+        在 OSS 产品详情页，单击立即开通。
+        开通服务后，在 OSS 产品详情页单击管理控制台直接进入 OSS 管理控制台界面。
+        您也可以单击位于官网首页右上方菜单栏的控制台，进入阿里云管理控制台首页，然后单击左侧的对象存储 OSS 菜单进入 OSS 管理控制台界面。
+        ```
+
+        在开通OSS服务后，需要到RAM访问控制台（https://ram.console.aliyun.com/overview）
+
+        添加子账户访问key。使用子账户Key的原因是因为账户本身的key相当于操作系统root级别，因此不适合应用程序的开发。
+
+        添加子账户key并设置用户组权限，并添加bucket，即可开始使用OSS。
+
+   ​		
+
+   ​		
+
+   
