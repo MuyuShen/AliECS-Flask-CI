@@ -335,10 +335,50 @@ pre-project for flask-ci-demo project
 
       内部增加blueprint文件夹，提供基本的接口路由方法，
 
-      验证运行：在本地浏览器中访问http://localhost:5000/main/，显示
+      手动验证运行：
+
+      1.设置FLASK_APP=app.py
+
+      2.运行 $ flask
+
+      在本地浏览器中访问http://localhost:5000/main/，显示
 
       ```
       welcome to CI/CD world 🌏
+      ```
+
+   2. 改造本地测试
+
+      在上面的测试中，需要手工设置环境变量后运行，为了减少操作次数，使用make指令来进行本地化测试管理。
+
+      首先在项目根路径（flask-dev的上级目录）创建Makefile
+
+      ```
+      .PHONY: app shell
+      
+      FLASK_APP_NAME='flask-dev/app.py'
+      
+      all: app
+      
+      app:
+      	FLASK_APP=$(FLASK_APP_NAME) FLASK_ENV='default' flask run --host=0.0.0.0
+      ```
+
+      保存后，直接在当前目录下运行
+
+      ```
+      make all
+      ```
+
+      启动成功：
+
+      ```
+      [root@devtest0213 AliECS-Flask-CI]# make all
+      FLASK_APP='flask-dev/app.py' FLASK_ENV='default' flask run --host=0.0.0.0
+       * Serving Flask app "flask-dev/app.py"
+       * Environment: default
+       * Debug mode: off
+       * Running on http://0.0.0.0:5000/ (Press CTRL+C to quit)
       ```
 
       
