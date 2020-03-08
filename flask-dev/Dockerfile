@@ -1,6 +1,6 @@
 FROM python:3.8.1
-COPY ./flask-dev ./flask-dev
-workdir ./flask-dev
+COPY . /flask-dev
+workdir /flask-dev
 ENV FLASK_APP app.py
 ENV FLASK_RUN_HOST 0.0.0.0
 RUN pip install -r requirements.txt

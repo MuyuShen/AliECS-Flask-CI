@@ -139,8 +139,8 @@ pre-project for flask-ci-demo project
 2. /flask-dev/Dockerfile
    ```
    FROM python:3.8.1
-   COPY ./flask-dev ./flask-dev
-   workdir ./flask-dev
+   COPY . /flask-dev
+   workdir /flask-dev
    ENV FLASK_APP app.py
    ENV FLASK_RUN_HOST 0.0.0.0
    RUN pip install -r requirements.txt
@@ -149,7 +149,7 @@ pre-project for flask-ci-demo project
 3. /nginx-dev/Dockerfile
    ```
    FROM nginx
-   COPY ./nginx-dev/nginx.conf /etc/nginx/nginx.conf
+   COPY ./nginx.conf /etc/nginx/nginx.conf
    ```
 
 4. docker-compose安装
