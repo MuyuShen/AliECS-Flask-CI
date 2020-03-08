@@ -199,4 +199,146 @@ pre-project for flask-ci-demo project
 
    
 
-   
+   # CI前篇 - 配置准备
+
+   1. 改造flask
+
+      说是改造，不如说是区分不同环境下使用的配置信息。以下配置的主要目的是为了满足快速测试，需要使用不同的组件测试，典型的例子为，线上使用mysql，开发使用sqlite。
+
+      ```
+      # config.py
+      class Config:
+          DEBUG = False
+          TESTING = False
+          SECRET_KEY = "write by java"
+      
+      
+      class DevelopmentConfig(Config):
+          DEBUG = True
+      
+      
+      class TestingConfig(Config):
+          TESTING = True
+          DEBUG = True
+      
+      
+      config = {
+          "develop": DevelopmentConfig,
+          "testing": TestingConfig,
+          "default": DevelopmentConfig,
+      }  
+      ```
+
+      ```
+      # app.py
+      import os
+      from . import create_app
+      
+      app = create_app(os.getenv("FLASK_CONFIG", "default"))
+      
+      
+      @app.shell_context_processor
+      def make_shell_context():
+          context = dict(app=app)
+          return context
+      ```
+
+      ```
+      # /blueprints/main/views
+      from flask import Blueprint
+      
+      bp = Blueprint("main", __name__)
+      
+      
+      @bp.route("/")
+      def index():
+          return "welcome to CI/CD world 🌏"
+      
+      from flask import Blueprint
+      
+      bp = Blueprint("main", __name__)
+      
+      
+      @bp.route("/")
+      def index():
+          return "welcome to CI/CD world 🌏"
+      ```
+
+      ```
+      # __init__.py
+      from flask import Flask
+      from .config import config
+      
+      
+      def _init_errors(app):
+          @app.errorhandler(403)
+          def page_permission_deny(e):
+              return "403", 403
+      
+          @app.errorhandler(404)
+          def page_not_found(e):
+              return "404", 404
+      
+          @app.errorhandler(500)
+          def internal_server_error(e):
+              return "500", 500
+      
+      
+      def _register_blueprints(app):
+          from .blueprints.main.views import bp as main_bp
+      
+          app.register_blueprint(main_bp, url_prefix="/main")
+      
+      
+      def create_app(config_name):
+          app = Flask(__name__, instance_relative_config=True)
+          app.config.from_object(config[config_name])
+          app.config.from_pyfile("config.py", silent=True)
+      
+          _init_errors(app)
+          _register_blueprints(app)
+      
+          return app
+      ```
+
+      首先改动的是上述四个文件。改动后的项目目录结构如下：
+
+      ```
+      │  .gitignore
+      │  docker-compose.yml
+      │  LICENSE
+      │  list.txt
+      │  README.md
+      │  
+      ├─flask-dev
+      │  │  app.py
+      │  │  config.py
+      │  │  Dockerfile
+      │  │  requirements.txt
+      │  │  __init__.py
+      │  │  
+      │  ├─blueprints
+      │  │  │  __init__.py
+      │  │  │  
+      │  │  └─main
+      │  │  │  │  views.py
+      │  │  │  │  __init__.py
+      │          
+      └─nginx-dev
+              Dockerfile
+              nginx.conf
+      ```
+
+      改动后项目结构变成标准的flask开发结构：
+
+      根路径下保存入口文件app.py，配置文件config.py，项目包管理方法__init__.py
+
+      内部增加blueprint文件夹，提供基本的接口路由方法，
+
+      验证运行：在本地浏览器中访问http://localhost:5000/main/，显示
+
+      ```
+      welcome to CI/CD world 🌏
+      ```
+
+      

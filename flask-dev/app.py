@@ -1,6 +1,11 @@
-from flask import Flask
-app = Flask(__name__)
+import os
+from . import create_app
 
-@app.route('/')
-def hello_world():
-    return 'Hello, World!'
+app = create_app(os.getenv("FLASK_CONFIG", "default"))
+
+
+@app.shell_context_processor
+def make_shell_context():
+    context = dict(app=app)
+    return context
+
