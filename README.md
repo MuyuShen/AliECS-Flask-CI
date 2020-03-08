@@ -136,6 +136,7 @@ pre-project for flask-ci-demo project
           Dockerfile
           nginx.conf
    ```
+   
 2. /flask-dev/Dockerfile
    ```
    FROM python:3.8.1
@@ -146,6 +147,7 @@ pre-project for flask-ci-demo project
    RUN pip install -r requirements.txt
    CMD ["flask", "run"]
    ```
+   
 3. /nginx-dev/Dockerfile
    ```
    FROM nginx
@@ -181,7 +183,19 @@ pre-project for flask-ci-demo project
          - "80:80"
    ```
 
-   
+6. 启动docker-compose
+
+   ```
+   $ docker-compose up
+   ```
+
+   启动成功后效果如下：
+
+   ```
+   CONTAINER ID        IMAGE                   COMMAND                  CREATED              STATUS              PORTS                    NAMES
+   7e30591e4aa6        aliecs-flask-ci_web     "flask run"              About a minute ago   Up About a minute   0.0.0.0:5000->5000/tcp   aliecs-flask-ci_web_1
+   148399e8ae63        aliecs-flask-ci_nginx   "nginx -g 'daemon ..."   About a minute ago   Up 5 seconds        0.0.0.0:80->80/tcp       aliecs-flask-ci_nginx_1
+   ```
 
    
 
