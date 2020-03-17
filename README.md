@@ -474,8 +474,105 @@ pre-project for flask-ci-demo project
    
       做到这里的时候，又涉及到项目结构的调整。因为之前的设计中，docker只管理了web和nginx两个服务，两者是平行的，现在需要增加一个test的服务，因而test和web也是保持平行的关系。因此整个项目目录结构就需要调整了。
    
-      
+      调整后的目录结构如下：
    
+      ```
+      D:.
+      │  .gitignore
+      │  docker-compose.yml
+      │  LICENSE
+      │  list.txt
+      │  Makefile
+      │  projects.ini
+      │  README.md
+      │  
+      ├─flask-dev
+      │  │  config.py
+      │  │  manage.py
+      │  │  requirements.txt
+      │  │  
+      │  ├─app
+      │  │  │  __init__.py
+      │  │  │  
+      │  │  ├─blueprints
+      │  │  │  │  __init__.py
+      │  │  │  │  
+      │  │  │  └─main
+      │  │  │          views.py
+      │  │  │          __init__.py
+      │  │  │          
+      │  │  └─oss
+      │  │          oss_api.py
+      │  │          __init__.py
+      │  │          
+      │  ├─docker
+      │  │  ├─app
+      │  │  │      Dockerfile
+      │  │  │      
+      │  │  ├─product
+      │  │  │      Dockerfile
+      │  │  │      
+      │  │  └─test
+      │  │          Dockerfile
+      │  │          
+      │  ├─instance
+      │  │      config.py
+      │  │      
+      │  └─tests
+      │      │  conftest.py
+      │      │  unittest.py
+      │      │  __init__.py
+      │      │  
+      │      └─oss_test
+      │              test_api_access.py
+      │              __init__.py
+      │              
+      └─nginx-dev
+              Dockerfile
+              nginx.conf
+      ```
+      
+      该结构中新增了instance/config.py
+      
+      用于生产服务器/本地服务器保存额外环境配置（比如oss_ak_id）。
+      
+      
+      
+      在根目录使用：
+      
+      ```
+      $ make test
+      ```
+      
+      即可本地运行测试。
+      
+      
+      
+      另外，还调整了docker-compose的配置项。变更为：
+      
+      ```
+      version: '3'
+      services:
+        web:
+          build:
+            context: .
+            dockerfile: ./flask-dev/docker/app
+          ports:
+            - "5000:5000"
+        test:
+          build:
+            context: .
+            dockerfile: ./flask-dev/docker/test
+        nginx:
+          build: ./nginx-dev
+          ports:
+            - "80:80"
+      ```
+      
+      其中，context项指定compose文件所在目录为根目录，通过web和test的不同来指定测试和开发环境配置。
+      
+      
+      
       
    
    
