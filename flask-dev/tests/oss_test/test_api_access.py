@@ -1,7 +1,7 @@
 import pytest
 from flask import current_app
-from tasks import Bucket
+from app.oss import Bucket
 
 
-def test_get_bucket_lists(app_content):
+def test_get_bucket_lists():
     bucket = Bucket('lxq-photo')

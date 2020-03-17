@@ -1,5 +1,5 @@
 import pytest
-from web import create_app
+from app import create_app
 
 
 class TestCase:
