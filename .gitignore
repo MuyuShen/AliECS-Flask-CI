@@ -133,3 +133,4 @@ dmypy.json
 
 # Config
 projects.ini
+instance/
