@@ -1,5 +1,5 @@
 from flask import Flask
-from .config import config
+from config import config
 
 
 def _init_errors(app):
@@ -31,3 +31,5 @@ def create_app(config_name):
     _register_blueprints(app)
 
     return app
+
+

@@ -413,6 +413,61 @@ pre-project for flask-ci-demo project
 
    ​		
 
-   ​		
+   2. 在项目中支持pytest
 
+      在写下说明的此刻，pytest最新的版本是5.4.0
+   
+      以当前的pytest构建工程项目，首先要对项目目录结构做设计。pytest的包引入机制，决定了pytest无法引用根目录下的环境配置。这应该是出于包管理的需要。由于我们当前配置上下文的__init__.py文件写在了根目录下，在tests下的pytest配置将无法引入。
+   
+      所以最佳的办法就是在root目录下使用一个启动入口。对应的开发环境下写配置入口。
+   
+      改造后的结构如下：
+   
+      ```
+      flask-dev目录:.
+      │  app.py
+      │  config.py
+      │  Dockerfile
+      │  list.txt
+      │  pytestdebug.log
+      │  requirements.txt
+      │  
+      ├─tests
+      │  │  conftest.py
+      │  │  unittest.py
+      │  │  __init__.py
+      │  │  
+      │  └─oss_test
+      │          test_api_access.py
+      │          __init__.py
+      │          
+      └─web
+          │  __init__.py
+          │  
+          └─blueprints
+              │  __init__.py
+              │  
+              └─main
+                      views.py
+                      __init__.py
+      ```
+   
+      测试成功：
+   
+      ```
+      =================================================================================== test session starts ====================================================================================
+      platform win32 -- Python 3.7.4, pytest-5.4.0, py-1.8.1, pluggy-0.13.1 -- d:\python\python.exe
+      cachedir: .pytest_cache
+      rootdir: D:\AliECS-Flask-CI\flask-dev
+      collected 1 item
+      
+      tests/oss_test/test_api_access.py::test_get_bucket_lists PASSED                                                                                                                       [100%]
+      
+      ==================================================================================== 1 passed in 0.07s =====================================================================================
+      ```
+   
+      
+   
+      
+   
    

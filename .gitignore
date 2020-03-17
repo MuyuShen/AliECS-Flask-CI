@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Pytest
+.pytest_cache
+
+# Config
+projects.ini

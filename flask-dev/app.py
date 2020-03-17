@@ -1,5 +1,5 @@
 import os
-from . import create_app
+from web import create_app
 
 app = create_app(os.getenv("FLASK_CONFIG", "default"))
 
@@ -8,4 +8,3 @@ app = create_app(os.getenv("FLASK_CONFIG", "default"))
 def make_shell_context():
     context = dict(app=app)
     return context
-
