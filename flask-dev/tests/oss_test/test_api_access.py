@@ -17,7 +17,7 @@ def test_bucket_access(app_content):
 
 @pytest.fixture()
 def test_create_file():
-    filename = random_file("test_only")
+    filename = random_file("test_only.txt")
     yield filename
     import os
     assert filename in os.listdir()

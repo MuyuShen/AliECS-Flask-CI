@@ -1,4 +1,4 @@
-.PHONY: app test
+.PHONY: app test test-one
 
 FLASK_APP_NAME='flask-dev/manage.py'
 
@@ -9,3 +9,6 @@ app:
 
 test:
 	FLASK_APP=$(FLASK_APP_NAME) FLASK_ENV='testing' pytest -o log_cli=true -o log_cli_level=INFO
+
+test-one:
+	FLASK_APP=$(FLASK_APP_NAME) FLASK_ENV='testing' pytest flask-dev/tests/oss_test/test_main_api.py -o log_cli=true -o log_cli_level=INFO
