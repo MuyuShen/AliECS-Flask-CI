@@ -8,4 +8,4 @@ app:
 	FLASK_APP=$(FLASK_APP_NAME) FLASK_ENV='default' flask run --host=0.0.0.0
 
 test:
-	FLASK_APP=$(FLASK_APP_NAME) FLASK_ENV='testing' pytest
+	FLASK_APP=$(FLASK_APP_NAME) FLASK_ENV='testing' pytest -o log_cli=true -o log_cli_level=INFO
