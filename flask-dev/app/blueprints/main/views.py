@@ -19,5 +19,7 @@ def upload_file():
         access_key_secret = current_app.config['OSS_AK_SECRET']
         endpoint = current_app.config['OSS_ENDPOINT']
         bucket = oss2.Bucket(oss2.Auth(access_key_id, access_key_secret), endpoint, 'lxq-photo')
-        bucket.put_object('upload_file_test.txt', f)
-        return "upload success"
+        from app.wheels import create_unique_name
+        name = create_unique_name()
+        bucket.put_object(name, f)
+        return "upload success, filename is {0}".format(name)
