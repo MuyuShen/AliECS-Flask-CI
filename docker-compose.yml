@@ -3,13 +3,13 @@ services:
   web:
     build:
       context: .
-      dockerfile: ./flask-dev/docker/app
+      dockerfile: ./flask-dev/docker/app/Dockerfile
     ports:
       - "5000:5000"
   test:
     build:
       context: .
-      dockerfile: ./flask-dev/docker/test
+      dockerfile: ./flask-dev/docker/test/Dockerfile
   nginx:
     build: ./nginx-dev
     ports:
