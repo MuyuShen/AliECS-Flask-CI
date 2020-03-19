@@ -571,8 +571,142 @@ pre-project for flask-ci-demo project
       
       其中，context项指定compose文件所在目录为根目录，通过web和test的不同来指定测试和开发环境配置。
       
+   4. 构建及测试执行
+   
+      对于web应用而言，验证其工作的有效性有很多种途径。对于开发者而言，倾向于选用更直接的验证方法，对于测试人员，倾向于更贴近使用场景的测试方法。
+   
+      对于场景的测试，在CI前篇中的flask启动后，已经可以使用浏览器访问欢迎页了。说明我们的web服务具备真实访问的能力。但开发过程中的粒度更小，排查时不应该跨界面运行。
+   
+      之前部署中提到了pytest配置中的conftest.py文件的入口作用。在Flask实践中，会引入flask的test_client方法来进行上下文环境的管理。通过入口处加载此方法，我们可以直接使用Flask内建的url_for的路由规则，直接捕获http请求的数据，在可靠性和效率上都是最佳的选择。
+   
+      Flask文档中也有关于整合pytest的示例。在写法上有区别，因为官方文档应用pytest比项目中这段引用晚了一年。这段引用是基于unittest的方法构建改造的，项目中还保留原有的unittest方法，也许以后还会用到？
+   
+      有一个需要提到的地方，在实际部署时，pytest构建测试类时，不会像运行flask run一样对端口进行绑定。而是需要在环境变量中配置'SERVER_NAME'的值。本地测试，按理说该值绑定的对象在/etc/hosts中。所以此处采用的绑定是localhost。采用不存在的SERVER_NAME是否能启动测试我没有验证，有兴趣的可以自己尝试。
+   
+      在配置完成以后，构建的第一个测试方法是这样的：
+   
+      ```
+      import pytest
+      from flask import current_app, url_for
       
+      def test_visit_index(app_content):
+          current_app.logger.debug(app_content.app.config['SERVER_NAME'])
+          current_app.logger.debug(url_for('main.index'))
+          response = app_content.client.get(url_for("main.index"))
+          current_app.logger.info(response.data)
+          assert response.status_code == 200
+      ```
+   
+      除去打印日志的内容，函数的功能只有获取response和assert两行。
+   
+      上面只保留了状态码验证，如果要对页面内容验证的话，则是：
+   
+      ```
+      	assert b"welcome to CI/CD world" in response.data
+      ```
+   
+      在完成这个测试以后，对于接口的测试用例编写已经可以开展了。
+   
+      但这里想对url_for方法的调用做一个简单介绍。url_for函数的调用路径，取决于flask create_app方法中注册的蓝图路径。在项目中是：
+   
+      ```
+      def _register_blueprints(app):
+          from .blueprints.main.views import bp as main_bp
       
+          app.register_blueprint(main_bp, url_prefix="/main")
+      ```
+   
+      对应路由处的方法是：
+   
+      ```
+      @bp.route("/")
+      def index():
+          return "welcome to CI/CD world 🌏"
+      ```
+   
+      因此此处的路径为"main.index"，即路径+方法名称。
+   
+   5. 文件处理
+   
+      上面说完了基础测试用例的执行，回归正题。文件上传/图片服务。使用OSS对象时，我们的开发只是对SDK中的方法进行了二次封装。因此从过程来看，在CI运行的服务器端不会保留文件的信息。为了保证每个文件在OSS存储时的独立性，使用uuid来锁定文件的唯一性。
+   
+      此外，后续根据实际业务需求，还要考虑对文件大小的限制，或者有可能需要留存和管理上传文件，这也是文件处理的考虑内容。
+   
+      根据唯一性要求，选用uuid.uuid1()或者uuid.uuid4()方法都是不错的。这里呢，就先用uuid1好了。
+   
+      写好方法以后，原函数的上传就改成这样了：
+   
+      ```
+      		from app.wheels import create_unique_name
+              name = create_unique_name()
+              bucket.put_object(name, f)
+              return "upload success, filename is {0}".format(name)
+      ```
+   
+      运行$ make test-one结果：
+   
+      ```
+      =========================== short test summary info ===========================
+      FAILED flask-dev/tests/oss_test/test_main_api.py::test_upload_file - AssertionError: assert b'upload succ...-00163e0405b1' == b'upload success'
+      ================== 1 failed, 1 passed, 1 warning in 0.28s======================
+      ```
+   
+      然后简单修改测试用例：
+   
+      ```
+      	response = app_content.client.post(url_for("main.upload_file"), data=payload, headers=headers)
+          assert b"upload success" in response.data
+          assert response.status_code == 200
+      ```
+   
+      当然修改的不够严谨，项目中没有对这里进行展开，比较严谨的设计是：a.通过测试方法传递uuid，这修改了原函数的功能；b.使用mock对象进行mock。
+   
+      mock有很多方法，我常用的有两种，mock.patch方法用于mock调用方法，没有返回值或者需要mock返回值时，以及mock对象时使用的mock.patch.object方法：
+   
+      ```
+      @mock.patch('main.index')
+      @mock.patch('main.index', mock.Mock(return_value='uuid'))
+      @mock.patch.object(Wechat)
+      ```
+   
+       贴一下改造后的方法和测试函数：
+   
+      ```
+      #testcase
+      
+      @mock.patch("app.wheels.create_unique_name", mock.Mock(return_value="c764d110-69bf-11ea-8cf0-00163e0405b1"))
+      def test_upload_file(app_content):
+          headers = {'content-type': 'multipart/form-data'}
+          payload = {'data': 'aaa'}
+          fileobj = b'test_file_upload_success'
+          payload.update({'file': fileobj})
+          response = app_content.client.post(url_for("main.upload_file"), data=payload, headers=headers)
+          assert b"upload success, filename is c764d110-69bf-11ea-8cf0-00163e0405b1" == response.data
+          assert response.status_code == 200
+      ```
+   
+      ```
+      #upload func
+      @bp.route("/upload", methods=['GET', 'POST'])
+      def upload_file():
+          if request.method == 'POST':
+              f = request.form['file']
+              current_app.logger.info(f)
+              import oss2
+              access_key_id = current_app.config['OSS_AK_ID']
+              access_key_secret = current_app.config['OSS_AK_SECRET']
+              endpoint = current_app.config['OSS_ENDPOINT']
+              bucket = oss2.Bucket(oss2.Auth(access_key_id, access_key_secret), endpoint, 'lxq-photo')
+              from app.wheels import create_unique_name
+              name = create_unique_name()
+              bucket.put_object(name, f)
+              return "upload success, filename is {0}".format(name)
+      ```
+   
+      
+   
+      
+   
       
    
    
