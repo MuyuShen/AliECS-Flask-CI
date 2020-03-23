@@ -1,5 +1,5 @@
 from flask import Blueprint
-from flask import current_app, request, jsonify
+from flask import current_app, request, abort
 
 bp = Blueprint("main", __name__)
 
@@ -12,11 +12,18 @@ def index():
 @bp.route("/upload", methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
+        if request.headers['Content-Type'] != 'application/x-www-form-urlencoded':
+            abort(406, 'Content-Type Should Be application/x-www-form-urlencoded')
         f = request.form['file']
-        current_app.logger.info(f)
         from app.wheels import put_photo
-        name = put_photo(f)
-        return {"filename": name}
+        try:
+            name = put_photo(f)
+        except:
+            abort(413, 'Save File Failed')
+        from flask import make_response
+        resp = make_response({"filename": name})
+        resp.headers['Content-Type'] = 'application/json'
+        return resp
 
 
 @bp.route("/download", methods=['GET'])

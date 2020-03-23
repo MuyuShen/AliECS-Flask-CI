@@ -14,6 +14,14 @@ def _init_errors(app):
     @app.errorhandler(500)
     def internal_server_error(e):
         return "500", 500
+    
+    @app.errorhandler(406)
+    def http_header_error(e):
+        return str(e), 406
+    
+    @app.errorhandler(413)
+    def http_header_error(e):
+        return str(e), 413
 
 
 def _register_blueprints(app):

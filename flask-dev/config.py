@@ -19,7 +19,7 @@ class DevelopmentConfig(Config):
 class TestingConfig(Config):
     TESTING = True
     DEBUG = True
-    SERVER_NAME = "localhost.localdomain"
+    SERVER_NAME = os.environ.get('SERVER_NAME', "localhost.localdomain")
 
 
 config = {

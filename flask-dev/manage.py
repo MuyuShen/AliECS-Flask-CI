@@ -8,3 +8,7 @@ app = create_app(os.getenv("FLASK_CONFIG", "default"))
 def make_shell_context():
     context = dict(app=app)
     return context
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
