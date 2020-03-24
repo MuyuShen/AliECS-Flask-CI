@@ -764,29 +764,11 @@ Thread Group  # 线程组，所有请求都建立在线程组之下，通过线�
        app.run(debug=True)
    ```
 
-   ​		在之前的pytest中，已经测试过的multiple/form-data类型可以正确传递数据，传递的数据格式为ImmutableDict（['data':'aaa', 'file': b'test_file_upload']），在这个类型的基础上，可以通过request.form['file']来获取文件内容。但在jmeter中，配置http_headers为multiple/form-data则返回http400错误。因为flask端执行后获得的不可变字典内容为空。将请求类型修改为application/x-www-form-urlencoded后，即可成功访问。这说明我们在执行flask的test_client.post方法时，post方法自动将multiple的数据转码了。Flask也能正确识别这个转码。过程可以参考以下代码的结果。
+   ​		在之前的pytest中，已经测试过的multiple/form-data类型可以正确传递数据，传递的数据格式为ImmutableDict（['data':'aaa', 'file': b'test_file_upload']），在这个类型的基础上，可以通过request.form['file']来获取文件内容。
 
-   ```
-   # 使用multiple/form-data格式，从接口工具模拟的请求在Flask中被捕获的结果
-   
-   # >>print(request.form)
-   ImmutableMultiDict([])
-   # >>print(request.files)
-   ImmutableMultiDict([])
-   # >>print(request.data)
-   b''
-   # >>print(request.mimetype)
-   multipart/form-data
-   # >>print(request.content_encoding)
-   None
-   # >>print(request.environ)
-   {'wsgi.version': (1, 0), 'wsgi.url_scheme': 'http', 'wsgi.input': <_io.BufferedReader name=996>, 'wsgi.errors': <_io.TextIOWrapper name='<stderr>' mode='w' encoding='utf-8'>, 'wsgi.multithread': True, 'wsgi.multiprocess': False, 'wsgi.run_once': False, 'werkzeug.server.shutdown': <function WSGIRequestHandler.make_environ.<locals>.shutdown_server at 0x0370EC48>, 'SERVER_SOFTWARE': 'Werkzeug/0.15.5', 'REQUEST_METHOD': 'POST', 'SCRIPT_NAME': '', 'PATH_INFO': '/main/upload', 'QUERY_STRING': '', 'REQUEST_URI': '/main/upload', 'RAW_URI': '/main/upload', 'REMOTE_ADDR': '127.0.0.1', 'REMOTE_PORT': 56518, 'SERVER_NAME': '127.0.0.1', 'SERVER_PORT': '5000', 'SERVER_PROTOCOL': 'HTTP/1.1', 'HTTP_HOST': '127.0.0.1:5000', 'HTTP_CONNECTION': 'keep-alive', 'CONTENT_LENGTH': '2260', 'HTTP_CACHE_CONTROL': 'no-cache', 'HTTP_SEC_FETCH_DEST': 'empty', 'CONTENT_TYPE': 'multipart/form-data', 'HTTP_USER_AGENT': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36', 'HTTP_POSTMAN_TOKEN': 'ad112888-3e7c-59df-1923-60bbb16f9a2c', 'HTTP_ACCEPT': '*/*', 'HTTP_ORIGIN': 'chrome-extension://fhbjgbiflinjbdggehcddcbncdddomop', 'HTTP_SEC_FETCH_SITE': 'none', 'HTTP_SEC_FETCH_MODE': 'cors', 'HTTP_ACCEPT_ENCODING': 'gzip, deflate, br', 'HTTP_ACCEPT_LANGUAGE': 'zh-CN,zh;q=0.9', 'werkzeug.request': <Request 'http://127.0.0.1:5000/main/upload' [POST]>}
-   ```
-
-   ​	有关于以上问题的更多内容，可以查看Request的文档：
-
-   https://werkzeug.palletsprojects.com/en/1.0.x/wrappers/#werkzeug.wrappers.Request
-
+   ​	----2020.3.24更新----
+   ​	昨天碰到了使用软件进行测试，返回http_code 400 error的问题。经过今天的定位调试。发现问题出在postman工具进行文件上传时，丢失了文件中的filename字段（例：Content-Disposition: form-data; name="file"; filename="list.txt"）。在更新过文件上传字段以后。顺便也将flask接口的request.form获取文件的方式改为了通过文件流request.files来获取的方式。对应的测试用例已经更新。另外，由于之前.gitignore文件注释掉了app/wheels文件，现将wheels文件夹更名为wheel文件夹。
+    ​	---------------------
    ​	至此，本地化测试完成，可以进行网络测试并编写对应的压力测试计划了。
 
    
