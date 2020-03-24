@@ -703,10 +703,92 @@ pre-project for flask-ci-demo project
               return "upload success, filename is {0}".format(name)
       ```
    
-      
+      download的测试也已经完成，相关代码也已经整合，但目前没有对流数据的下载做实际验证，手头没有很好的工具。等之后再做补充吧。
    
-      
+# 题外话-额外的测试保障
+​        在完成了上传和下载功能的测试以后，有几个待解决的问题：如何保障接口的可用性？系统面临的实际用户场景是怎样的？怎样了解当前服务的能力，能支持多大的用户数量？
+
+​        只有这几个问题得到了有效的答案，才是考虑如何在项目上做加法和有序开发的时候。这也是项目到现在为止都没有引入消息队列，数据库或其他工具的原因。我们只有一个web服务和一个nginx服务，是时候对它们进行暴力验证的时候了。
+
+
+
+1. 简单聊聊Jmeter
+
+   ​		在这个项目之前，我对jmeter的认识停留在理论上。之前的项目可能什么都有了，但并不需要性能测试，因为瓶颈往往没有出现，或者是已有的监控手段下，系统设计欠缺导致的问题比性能问题更多，或者在问题来临前我们就把场景的规模给限制了。这些也许都不是重要的原因，因为万事的根源只有一个：人力。
+
+   ​		我很清楚现在要做什么：测试我的上传下载服务接口，真正了解我部署的nginx和flask的性能极限，了解我的图片服务能否支持我当前的业务预期。
+
+   ​		所以还是用jmeter来做测试吧
+
+2. 开发准备
+
+   ​		为了方便调试和脚本编写，jmeter推荐用GUI工具来做开发。所以为此还得先本地安装一个Java。
+
+   ​		在安装完成java以后，Jmeter就可以正常使用了。这里推荐使用java8环境及3.x版本的jmeter(新版本可能会有插件不兼容的问题)
+
+   ​		关于Jmeter的使用有很多介绍的教程。这里只展开当前需要用到的部分。
+
+   ​		Jmeter软件打开后，选择新建-测试计划。创建一个Jmeter.jmx文件。这个文件相当于打包好的一整套测试用例集合。用例新建完成后，会有几个默认的组件被构建，分别是：
+
+   ```
+   User Defined Variables  # 用户定义的变量，我们可以把session类的数据放在这个集合里面
+   HTTP Cookie Manager  # cookie管理，用于保存执行过程中产生和使用的数据
+Thread Group  # 线程组，所有请求都建立在线程组之下，通过线程调度运行
+   View Result Tree  # 请求结果树，用于查看每个http请求的详细报告
+   ```
    
-      
+   ​		除了以上组件以外，还需要添加“聚合报告”组件，用以查看性能评估的结果。报告中提供执行样本的统计报表。
    
+   ​		有了这几个基本组件后，我们就可以开始构建jmeter的测试了。
+   
+   ​		但直接进行跨网络的测试，步子仍然迈的大了。不仅是因为省略了nginx代理所产生的中间过程。更重要的是，在之前的测试中，我们使用的是基于flask上下文的接口测试。或者说的更清楚一点，我们只是进行了上传服务api的调用测试。但我们没有分离请求和服务，请求发起时，和服务是一体的。或者它们本身是隔离的，但是由于调用的基础构件都是flask，我们仍不能保证这个服务是可用的。因为flask是第三方的框架。
+   
+   ​		因此下一步的测试应该是启用两个服务，一个是flask服务，一个是调用服务，通过进程隔离来保障调用可以在通用的环境下正确运行。我本想用request包进行验证。但在这一层上更有效的方法是使用接口测试工具——postman/jmeter。
+   
+   ————————————
+   
+   ​		有趣的是，项目实际运行的结果产生了预料中的测试失败，并导致了我不能跳过这一部分的测试，而使用本地化构建最简Flask模型来验证flask提供的http服务。
+   
+3. 本地FLASK+Jmeter测试
+
+   ​		本地化构建Flask服务时，至少目前，我们不能直接使用flask run来加载debug模式对服务进行验证。即使我在本地（win10）设置了FLASK_ENV, FLASK_APP, 甚至DEBUG=True。也不能正确加载配置服务。原因应该是和flask集成的脚本设置有关。因此我选择使用python直接运行的方式来启动，并修改了manage.py文件，加上了启动入口。
+
+   ```
+   $ python manage.py
+   
+   # manage.py
+   
+   ...
+   
+   if __name__ == "__main__":
+       app.run(debug=True)
+   ```
+
+   ​		在之前的pytest中，已经测试过的multiple/form-data类型可以正确传递数据，传递的数据格式为ImmutableDict（['data':'aaa', 'file': b'test_file_upload']），在这个类型的基础上，可以通过request.form['file']来获取文件内容。但在jmeter中，配置http_headers为multiple/form-data则返回http400错误。因为flask端执行后获得的不可变字典内容为空。将请求类型修改为application/x-www-form-urlencoded后，即可成功访问。这说明我们在执行flask的test_client.post方法时，post方法自动将multiple的数据转码了。Flask也能正确识别这个转码。过程可以参考以下代码的结果。
+
+   ```
+   # 使用multiple/form-data格式，从接口工具模拟的请求在Flask中被捕获的结果
+   
+   # >>print(request.form)
+   ImmutableMultiDict([])
+   # >>print(request.files)
+   ImmutableMultiDict([])
+   # >>print(request.data)
+   b''
+   # >>print(request.mimetype)
+   multipart/form-data
+   # >>print(request.content_encoding)
+   None
+   # >>print(request.environ)
+   {'wsgi.version': (1, 0), 'wsgi.url_scheme': 'http', 'wsgi.input': <_io.BufferedReader name=996>, 'wsgi.errors': <_io.TextIOWrapper name='<stderr>' mode='w' encoding='utf-8'>, 'wsgi.multithread': True, 'wsgi.multiprocess': False, 'wsgi.run_once': False, 'werkzeug.server.shutdown': <function WSGIRequestHandler.make_environ.<locals>.shutdown_server at 0x0370EC48>, 'SERVER_SOFTWARE': 'Werkzeug/0.15.5', 'REQUEST_METHOD': 'POST', 'SCRIPT_NAME': '', 'PATH_INFO': '/main/upload', 'QUERY_STRING': '', 'REQUEST_URI': '/main/upload', 'RAW_URI': '/main/upload', 'REMOTE_ADDR': '127.0.0.1', 'REMOTE_PORT': 56518, 'SERVER_NAME': '127.0.0.1', 'SERVER_PORT': '5000', 'SERVER_PROTOCOL': 'HTTP/1.1', 'HTTP_HOST': '127.0.0.1:5000', 'HTTP_CONNECTION': 'keep-alive', 'CONTENT_LENGTH': '2260', 'HTTP_CACHE_CONTROL': 'no-cache', 'HTTP_SEC_FETCH_DEST': 'empty', 'CONTENT_TYPE': 'multipart/form-data', 'HTTP_USER_AGENT': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36', 'HTTP_POSTMAN_TOKEN': 'ad112888-3e7c-59df-1923-60bbb16f9a2c', 'HTTP_ACCEPT': '*/*', 'HTTP_ORIGIN': 'chrome-extension://fhbjgbiflinjbdggehcddcbncdddomop', 'HTTP_SEC_FETCH_SITE': 'none', 'HTTP_SEC_FETCH_MODE': 'cors', 'HTTP_ACCEPT_ENCODING': 'gzip, deflate, br', 'HTTP_ACCEPT_LANGUAGE': 'zh-CN,zh;q=0.9', 'werkzeug.request': <Request 'http://127.0.0.1:5000/main/upload' [POST]>}
+   ```
+
+   ​	有关于以上问题的更多内容，可以查看Request的文档：
+
+   https://werkzeug.palletsprojects.com/en/1.0.x/wrappers/#werkzeug.wrappers.Request
+
+   ​	至此，本地化测试完成，可以进行网络测试并编写对应的压力测试计划了。
+
+   
+
    
