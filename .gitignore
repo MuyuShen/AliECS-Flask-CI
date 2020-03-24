@@ -130,6 +130,7 @@ dmypy.json
 
 # Pytest
 .pytest_cache
+*.test.pytest.*
 
 # Config
 projects.ini

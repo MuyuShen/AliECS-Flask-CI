@@ -637,7 +637,7 @@ pre-project for flask-ci-demo project
       写好方法以后，原函数的上传就改成这样了：
    
       ```
-      		from app.wheels import create_unique_name
+      		from app.wheel import create_unique_name
               name = create_unique_name()
               bucket.put_object(name, f)
               return "upload success, filename is {0}".format(name)
@@ -674,7 +674,7 @@ pre-project for flask-ci-demo project
       ```
       #testcase
       
-      @mock.patch("app.wheels.create_unique_name", mock.Mock(return_value="c764d110-69bf-11ea-8cf0-00163e0405b1"))
+      @mock.patch("app.wheel.create_unique_name", mock.Mock(return_value="c764d110-69bf-11ea-8cf0-00163e0405b1"))
       def test_upload_file(app_content):
           headers = {'content-type': 'multipart/form-data'}
           payload = {'data': 'aaa'}
@@ -697,7 +697,7 @@ pre-project for flask-ci-demo project
               access_key_secret = current_app.config['OSS_AK_SECRET']
               endpoint = current_app.config['OSS_ENDPOINT']
               bucket = oss2.Bucket(oss2.Auth(access_key_id, access_key_secret), endpoint, 'lxq-photo')
-              from app.wheels import create_unique_name
+              from app.wheel import create_unique_name
               name = create_unique_name()
               bucket.put_object(name, f)
               return "upload success, filename is {0}".format(name)

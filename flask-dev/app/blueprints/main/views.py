@@ -12,10 +12,9 @@ def index():
 @bp.route("/upload", methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
-        if request.headers['Content-Type'] != 'application/x-www-form-urlencoded':
-            abort(406, 'Content-Type Should Be application/x-www-form-urlencoded')
-        f = request.form['file']
-        from app.wheels import put_photo
+        f = request.files['file']
+        current_app.logger.info(f)
+        from app.wheel import put_photo
         try:
             name = put_photo(f)
         except:
@@ -29,6 +28,6 @@ def upload_file():
 @bp.route("/download", methods=['GET'])
 def download_file():
     filename = request.form['filename']
-    from app.wheels import get_photo
+    from app.wheel import get_photo
     photo = get_photo(filename).resp.read()
     return photo

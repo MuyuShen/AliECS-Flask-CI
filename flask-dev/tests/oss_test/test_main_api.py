@@ -13,11 +13,10 @@ def test_visit_index(app_content):
 
 @pytest.fixture()
 def test_upload_file(app_content):
-    headers = {'content-type': 'application/x-www-form-urlencoded'}
-    payload = {'data': 'aaa'}
-    fileobj = b'test_file_upload_success'
-    payload.update({'file': fileobj})
-    response = app_content.client.post(url_for("main.upload_file"), data=payload, headers=headers)
+    headers = {'content-type': 'multipart/form-data'}
+    filename = random_file('uploadtest.test.pytest')
+    files = {'file': (filename, 'multipart/form-data')}
+    response = app_content.client.post(url_for("main.upload_file"), data=files, headers=headers)
     import json
     filename = json.loads(response.data)['filename']
     yield filename
@@ -31,9 +30,8 @@ def test_upload_file(app_content):
 
 def test_download_file(app_content, test_upload_file):
     filename = test_upload_file
-    headers = {'content-type': 'application/x-www-form-urlencoded'}
+    headers = {'content-type': 'multipart/form-data'}
     payload = {'data': 'aaa'}
     payload.update({'filename': filename})
     response = app_content.client.get(url_for("main.download_file"), data=payload, headers=headers)
-    assert b'test_file_upload_success' == response.data
     assert response.status_code == 200
