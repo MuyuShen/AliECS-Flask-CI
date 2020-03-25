@@ -12,7 +12,7 @@ def index():
 @bp.route("/upload", methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
-        f = request.files['file']
+        f = request.files['file'].read()
         current_app.logger.info(f)
         from app.wheel import put_photo
         try:
