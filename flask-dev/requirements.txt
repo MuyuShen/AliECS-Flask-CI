@@ -1,0 +1,11 @@
+<<<<<<< HEAD
+oss2==2.9.1
+Flask==1.1.1
+=======
+Click==7.0
+Flask==1.1.1
+itsdangerous==1.1.0
+Jinja2==2.11.1
+MarkupSafe==1.1.1
+Werkzeug==1.0.0
+>>>>>>> 6dc70565149d310250ef20b6b877c2faf7a0873c
