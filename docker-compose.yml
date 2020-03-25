@@ -1,5 +1,10 @@
 version: '3'
 services:
+
+  app:
+    build: 
+      context: .
+      dockerfile: ./flask-dev/docker/Dockerfile
   pro:
     build:
       context: .
