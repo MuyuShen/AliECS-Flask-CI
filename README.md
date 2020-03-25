@@ -824,23 +824,27 @@ Thread Group  # 线程组，所有请求都建立在线程组之下，通过线�
 
    在设置完nginx后，docker-compose.yml也进行了对应的更新，分成了pro/dev/test三个不同的容器。与此同时，我们还需要对OSS服务进行隔离。创建新的bucket供测试和开发使用。
 
+   
+
+   1.1 本地化测试
+
    为了测试不同环境下能正确加载GRAPH_SERVER_BUCKET的设置，先进行本地测试：
-
+   
    对于flask shell命令，在启动之前要先设置环境变量，在不同的系统中设置环境变量的方式是不同的：
-
+   
    ```
    # Linux
    $ export FLASK_APP=manage.py
    # windows
-   C:\path\to\app>set FLASK_APP=manage.py
+C:\path\to\app>set FLASK_APP=manage.py
    # windows powershell
-   PS C:\path\to\app> $env:FLASK_APP = "manage.py"
+PS C:\path\to\app> $env:FLASK_APP = "manage.py"
    ```
 
    设置完启动命令后，可以开始测试config的加载顺序了。
-
+   
    我们在/flask-dev/app/__init__.py中有以下函数
-
+   
    ```
    def create_app(config_name):
        app = Flask(__name__, instance_relative_config=True)
@@ -848,11 +852,286 @@ Thread Group  # 线程组，所有请求都建立在线程组之下，通过线�
        app.config.from_pyfile("config.py", silent=True)
    
        _init_errors(app)
-       _register_blueprints(app)
+    _register_blueprints(app)
    
-       return app
+    return app
    ```
-
+   
    其中from_object和from_pyfile两个方法分别对应读取flask-dev/config.py及读取.instance/config.py。
-
+   
    第一个方法会执行Config类的加载，把config类的内容导入上下文环境中。第二个方法会重载已经导入的环境内容。这里的修改主要是为了额外支持重载OSS_SERVER_BUCKET属性。把OSS上生产环境的数据和开发环境隔离。
+   
+   修改后的Config类，可以看到OSS配置变成了字典索引
+   
+   ```
+   # config.py
+   class Config:
+       ENV = 'production'
+       DEBUG = False
+       TESTING = False
+   
+       # flask-dev/instance/config.py
+       # 生产环境下以下变量请放在./instance目录下的config.py文件中
+       SECRET_KEY = "write by java"
+       OSS_AK_ID = 'uuid'
+       OSS_AK_SECRET = 'uuid'
+       OSS_ENDPOINT = 'oss-cn-hangzhou.aliyuncs.com'
+       OSS_SERVER_BUCKET = {
+       'production': 'ecs-photo',
+       'develop': 'ecs-dev',
+       'testing': 'ecs-test'
+       }
+       
+       # OSS环境变量配置
+       OSS_AK_ID = os.environ.get('OSS_AK_ID', '<你的access_key_id')
+       OSS_AK_SECRET = os.environ.get('OSS_AK_SECRET', '<你的access_key_secret>')
+       OSS_ENDPOINT = os.environ.get('OSS_ENDPOINT', '<你的服务器访问域名>')
+   
+   ```
+   
+   windows-powershell运行结果如下：
+   
+   ```
+   Python 3.7.4 (tags/v3.7.4:e09359112e, Jul  8 2019, 19:29:22) [MSC v.1916 32 bit (Intel)] on win32
+   App: app [production]
+   Instance: D:\AliECS-Flask-CI\flask-dev\instance
+   >>>
+   >>> from flask import current_app
+   >>> current_app.config
+   <Config {'ENV': 'production', 'DEBUG': False, 'TESTING': False, 'PROPAGATE_EXCEPTIONS': None, 'PRESERVE_CONTEXT_ON_EXCEPTION': None, 'SECRET_KEY': '***', 'PERMANENT_SESSION_LIFETIME': datetime.timedelta(days=31), 'USE_X_SENDFILE': False, 'SERVER_NAME': None, 'APPLICATION_ROOT': '/', 'SESSION_COOKIE_NAME': 'session', 'SESSION_COOKIE_DOMAIN': None, 'SESSION_COOKIE_PATH': None, 'SESSION_COOKIE_HTTPONLY': True, 'SESSION_COOKIE_SECURE': False, 'SESSION_COOKIE_SAMESITE': None, 'SESSION_REFRESH_EACH_REQUEST': True, 'MAX_CONTENT_LENGTH': None, 'SEND_FILE_MAX_AGE_DEFAULT': datetime.timedelta(seconds=43200), 'TRAP_BAD_REQUEST_ERRORS': None, 'TRAP_HTTP_EXCEPTIONS': False, 'EXPLAIN_TEMPLATE_LOADING': False, 'PREFERRED_URL_SCHEME': 'http', 'JSON_AS_ASCII': True, 'JSON_SORT_KEYS': True, 'JSONIFY_PRETTYPRINT_REGULAR': False, 'JSONIFY_MIMETYPE': 'application/json', 'TEMPLATES_AUTO_RELOAD': None, 'MAX_COOKIE_SIZE': 4093, 'OSS_AK_ID': '***', 'OSS_AK_SECRET': '***', 'OSS_ENDPOINT': 'oss-cn-hangzhou.aliyuncs.com', 'OSS_SERVER_BUCKET': {'production': 'lxq-photo', 'develop': 'lxq-dev', 'testing': 'lxq-test'}}>
+   >>>
+   >>> current_app.config['ENV']
+   'production'
+   >>> current_app.config['OSS_SERVER_BUCKET']
+   {'production': 'lxq-photo', 'develop': 'lxq-dev', 'testing': 'lxq-test'}
+   >>>
+   ```
+   
+   可以看到配置已经能正确加载了。
+   
+   
+   
+   1.2  编辑Docker配置
+   
+   在之前的项目配置中，每次键入命令"docker-compose build web"的时候，运行的时间都比较久。当时为了减少docker build的时间，已经把基础镜像下载完成了。但因为flask项目里面的依赖包每次都要通过pip install。由于网络原因，构建的速度仍然不快。
+   
+   为了加快构建速度，就需要把pip环境单独构建。于是就有了这样的目录结构。
+   
+   ```
+   ├─docker
+   │  │  Dockerfile
+   │  │  
+   │  ├─app
+   │  │      Dockerfile
+   │  │      
+   │  ├─product
+   │  │      Dockerfile
+   │  │      
+   │  └─test
+   │          Dockerfile
+   ```
+   
+   其中，docker/Dockerfile用于构建基础包
+   
+   ```
+   # docker/Dockerfile
+   from python:3.8.1
+   COPY ./flask-dev/requirements.txt /flask-dev/requirements.txt
+   workdir /flask-dev
+   RUN pip install -r requirements.txt
+   ```
+   
+   而docker/app/Dockerfile则调整为：
+   
+   ```
+   # docker/app/Dockerfile
+   FROM aliecs-flask-ci_app
+   COPY ./flask-dev /flask-dev
+   workdir /flask-dev
+   ENV FLASK_APP manage.py
+   ENV FLASK_RUN_HOST 0.0.0.0
+   ENV FLASK_CONFIG "develop"
+   CMD ["flask", "run"]
+   ```
+   
+   其中FROM部分根据已经生产的镜像名称进行填写。
+   
+   依次运行构建命令进行构建：
+   
+   ```
+   [root@devtest0213 AliECS-Flask-CI]# docker-compose build app
+   Building app
+   Step 1/4 : FROM python:3.8.1
+    ---> efdecc2e377a
+   Step 2/4 : COPY ./flask-dev/requirements.txt /flask-dev/requirements.txt
+    ---> 9567f0535a39
+   Removing intermediate container 9b5ba80fcf22
+   Step 3/4 : WORKDIR /flask-dev
+    ---> 3cf7731f2d2e
+   Removing intermediate container ac772740fbef
+   Step 4/4 : RUN pip install -r requirements.txt
+    ---> Running in 4a43f8c46950
+    
+    ... ... ...
+    
+    ---> c28c78330680
+   Removing intermediate container 4a43f8c46950
+   Successfully built c28c78330680
+   [root@devtest0213 AliECS-Flask-CI]# docker-compose build pro
+   Building pro
+   Step 1/6 : FROM aliecs-flask-ci_app
+    ---> c28c78330680
+   Step 2/6 : COPY ./flask-dev /flask-dev
+    ---> 41f36a59780b
+   Removing intermediate container 4424e1f25702
+   Step 3/6 : WORKDIR /flask-dev
+    ---> ea11da60e222
+   Removing intermediate container e09b3ed17114
+   Step 4/6 : ENV FLASK_APP manage.py
+    ---> Running in 91adfd229c9c
+    ---> 0f1108cd949b
+   Removing intermediate container 91adfd229c9c
+   Step 5/6 : ENV FLASK_RUN_HOST 0.0.0.0
+    ---> Running in 924fc5a80965
+    ---> dbb62fd3bf40
+   Removing intermediate container 924fc5a80965
+   Step 6/6 : CMD flask run
+    ---> Running in e3eeea358943
+    ---> a661ace8c9d6
+   Removing intermediate container e3eeea358943
+   Successfully built a661ace8c9d6
+   [root@devtest0213 AliECS-Flask-CI]# docker-compose build dev
+   [root@devtest0213 AliECS-Flask-CI]# docker-compose build test
+   [root@devtest0213 AliECS-Flask-CI]# docker-compose build nginx
+   ```
+   
+   镜像包列表：
+   
+   ```
+   [root@devtest0213 AliECS-Flask-CI]# docker images
+   REPOSITORY              TAG                 IMAGE ID            CREATED             SIZE
+   aliecs-flask-ci_test    latest              249850168437        About an hour ago   1 GB
+   aliecs-flask-ci_dev     latest              34f0ee641983        About an hour ago   1 GB
+   aliecs-flask-ci_pro     latest              a661ace8c9d6        About an hour ago   1 GB
+   aliecs-flask-ci_app     latest              c28c78330680        About an hour ago   1 GB
+   aliecs-flask-ci_nginx   latest              704750a6b5b7        2 hours ago         127 MB
+   nginx                   test                1f3a75d37e5a        2 days ago          127 MB
+   docker.io/python        3.8.1               efdecc2e377a        6 weeks ago         933 MB
+   docker.io/nginx         latest              2073e0bcb60e        7 weeks ago         127 MB
+   docker.io/redis         latest              44d36d2c2374        7 weeks ago         98.2 MB
+   ```
+   
+   docker-compose.yml:
+   
+   ```
+   version: '3'
+   services:
+   
+     app:
+       build: 
+         context: .
+         dockerfile: ./flask-dev/docker/Dockerfile
+     pro:
+       build:
+         context: .
+         dockerfile: ./flask-dev/docker/product/Dockerfile
+       ports:
+         - "5000:5000"
+     dev:
+       build:
+         context: .
+         dockerfile: ./flask-dev/docker/app/Dockerfile
+       ports:
+         - "5001:5000"
+     test:
+       build:
+         context: .
+         dockerfile: ./flask-dev/docker/test/Dockerfile
+       ports:
+         - "5002:5000"
+     nginx:
+       build: ./nginx-dev
+       ports:
+         - "80:80"
+     
+   ```
+   
+   运行后的容器列表：
+   
+   ```
+   [root@devtest0213 AliECS-Flask-CI]# docker ps -a
+   CONTAINER ID        IMAGE                   COMMAND                  CREATED             STATUS                         PORTS                    NAMES
+   95474ff116af        aliecs-flask-ci_app     "python3"                About an hour ago   Exited (0) About an hour ago                            aliecs-flask-ci_app_1
+   eb8adda99560        aliecs-flask-ci_dev     "flask run"              About an hour ago   Up About an hour               0.0.0.0:5001->5000/tcp   aliecs-flask-ci_dev_1
+   a47d7245dcbb        aliecs-flask-ci_pro     "flask run"              About an hour ago   Up About an hour               0.0.0.0:5000->5000/tcp   aliecs-flask-ci_pro_1
+   5e9813241028        aliecs-flask-ci_nginx   "nginx -g 'daemon ..."   About an hour ago   Up About an hour               0.0.0.0:80->80/tcp       aliecs-flask-ci_nginx_1
+   0bab0162c70d        aliecs-flask-ci_test    "flask run"              About an hour ago   Up About an hour               0.0.0.0:5002->5000/tcp   aliecs
+   ```
+   
+   Nginx-Server配置：
+   
+   ```
+   server {
+           listen          80;
+           server_name     _;
+   
+           access_log      /dev/fd/1 main;
+           error_log       /dev/fd/2 notice;
+   
+           location /pro {
+               # set link to another docker container with name
+               proxy_pass         http://pro:5000/;
+               proxy_redirect     off;
+   
+               # set proxy_header can perform reverse proxy and delivery routing
+               proxy_set_header   Host                 $http_host;
+               proxy_set_header   X-Real-IP            $remote_addr;
+               proxy_set_header   X-Forwarded-For      $proxy_add_x_forwarded_for;
+               proxy_set_header   X-Forwarded-Proto    $scheme;
+           }
+   
+           location /dev {
+               # set link to another docker container with name
+               proxy_pass         http://dev:5000/;
+               proxy_redirect     off;
+   
+               # set proxy_header can perform reverse proxy and delivery routing
+               proxy_set_header   Host                 $http_host;
+               proxy_set_header   X-Real-IP            $remote_addr;
+               proxy_set_header   X-Forwarded-For      $proxy_add_x_forwarded_for;
+               proxy_set_header   X-Forwarded-Proto    $scheme;
+           }
+   
+           location /test {
+               # set link to another docker container with name
+               proxy_pass         http://test:5000/;
+               proxy_redirect     off;
+   
+               # set proxy_header can perform reverse proxy and delivery routing
+               proxy_set_header   Host                 $http_host;
+               proxy_set_header   X-Real-IP            $remote_addr;
+               proxy_set_header   X-Forwarded-For      $proxy_add_x_forwarded_for;
+               proxy_set_header   X-Forwarded-Proto    $scheme;
+           }
+       }
+   ```
+   
+   
+   
+   最后，通过浏览器验证是否成功运行。由于Nginx配置的修改
+   
+   路由从http://47.114.42.73/main/改成了http://47.114.42.73/dev/main/
+   
+   访问结果：
+   
+   ```
+   Request URL: http://47.114.42.73/dev/main/
+   Request Method: GET
+   Status Code: 200 OK
+   Remote Address: 47.114.42.73:80
+   Referrer Policy: no-referrer-when-downgrade
+   ```
+   
+   
+   
+   
