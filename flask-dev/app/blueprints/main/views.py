@@ -1,13 +1,7 @@
 from flask import Blueprint
 from flask import current_app, request, abort
-<<<<<<< HEAD
-<<<<<<< HEAD
 from app.wheel import put_photo, get_photo
 
-=======
->>>>>>> 6dc70565149d310250ef20b6b877c2faf7a0873c
-=======
->>>>>>> 6dc70565149d310250ef20b6b877c2faf7a0873c
 
 bp = Blueprint("main", __name__)
 
@@ -21,14 +15,6 @@ def index():
 def upload_file():
     if request.method == 'POST':
         f = request.files['file'].read()
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-        from app.wheel import put_photo
->>>>>>> 6dc70565149d310250ef20b6b877c2faf7a0873c
-=======
-        from app.wheel import put_photo
->>>>>>> 6dc70565149d310250ef20b6b877c2faf7a0873c
         try:
             name = put_photo(f)
         except:
@@ -42,13 +28,5 @@ def upload_file():
 @bp.route("/download", methods=['GET'])
 def download_file():
     filename = request.args.get('filename')
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-    from app.wheel import get_photo
->>>>>>> 6dc70565149d310250ef20b6b877c2faf7a0873c
-=======
-    from app.wheel import get_photo
->>>>>>> 6dc70565149d310250ef20b6b877c2faf7a0873c
     photo = get_photo(filename).resp.read()
     return photo
