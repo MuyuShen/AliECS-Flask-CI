@@ -1,6 +1,7 @@
 version: '3'
 services:
 <<<<<<< HEAD
+<<<<<<< HEAD
   pro:
     build:
       context: .
@@ -11,12 +12,19 @@ services:
 =======
   web:
 >>>>>>> 6dc70565149d310250ef20b6b877c2faf7a0873c
+=======
+  web:
+>>>>>>> 6dc70565149d310250ef20b6b877c2faf7a0873c
     build:
       context: .
       dockerfile: ./flask-dev/docker/app/Dockerfile
     ports:
 <<<<<<< HEAD
+<<<<<<< HEAD
       - "5001:5000"
+=======
+      - "5000:5000"
+>>>>>>> 6dc70565149d310250ef20b6b877c2faf7a0873c
 =======
       - "5000:5000"
 >>>>>>> 6dc70565149d310250ef20b6b877c2faf7a0873c
@@ -25,8 +33,11 @@ services:
       context: .
       dockerfile: ./flask-dev/docker/test/Dockerfile
 <<<<<<< HEAD
+<<<<<<< HEAD
     ports:
       - "5002:5000"
+=======
+>>>>>>> 6dc70565149d310250ef20b6b877c2faf7a0873c
 =======
 >>>>>>> 6dc70565149d310250ef20b6b877c2faf7a0873c
   nginx:
