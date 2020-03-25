@@ -13,7 +13,6 @@ def index():
 def upload_file():
     if request.method == 'POST':
         f = request.files['file'].read()
-        current_app.logger.info(f)
         from app.wheel import put_photo
         try:
             name = put_photo(f)
@@ -27,7 +26,7 @@ def upload_file():
 
 @bp.route("/download", methods=['GET'])
 def download_file():
-    filename = request.form['filename']
+    filename = request.args.get('filename')
     from app.wheel import get_photo
     photo = get_photo(filename).resp.read()
     return photo

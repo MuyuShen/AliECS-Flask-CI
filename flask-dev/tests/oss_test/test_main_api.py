@@ -30,8 +30,6 @@ def test_upload_file(app_content):
 
 def test_download_file(app_content, test_upload_file):
     filename = test_upload_file
-    headers = {'content-type': 'multipart/form-data'}
-    payload = {'data': 'aaa'}
-    payload.update({'filename': filename})
-    response = app_content.client.get(url_for("main.download_file"), data=payload, headers=headers)
+    headers = {'content-type': 'application/json'}
+    response = app_content.client.get(url_for("main.download_file", filename=filename), headers=headers)
     assert response.status_code == 200
