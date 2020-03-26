@@ -31,6 +31,6 @@ def get_photo(name):
 
 
 def file_url(filename):
-    endpoint = current_app.config['OSS_ENDPOINT']
+    endpoint = current_app.config['OSS_PUBPOINT']
     bucket_name = current_app.config['OSS_SERVER_BUCKET'][current_app.config['ENV']]
-    return "{0}.{1}/{2}".format(bucket_name, endpoint, filename)
+    return "https://{0}.{1}/{2}".format(bucket_name, endpoint, filename)

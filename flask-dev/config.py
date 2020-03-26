@@ -11,7 +11,10 @@ class Config:
     SECRET_KEY = "write by java"
     OSS_AK_ID = 'uuid'
     OSS_AK_SECRET = 'uuid'
-    OSS_ENDPOINT = 'oss-cn-hangzhou.aliyuncs.com'
+    # endpoint 填写内网访问地址
+    OSS_ENDPOINT = 'oss-cn-hangzhou-internal.aliyuncs.com'
+    # pubpoint 填写外网访问地址
+    OSS_PUBPOINT = 'oss-cn-hangzhou.aliyuncs.com'
     OSS_SERVER_BUCKET = {
     'production': 'ecs-photo',
     'develop': 'ecs-dev',
