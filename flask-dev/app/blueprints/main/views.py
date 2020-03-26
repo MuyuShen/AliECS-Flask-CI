@@ -1,6 +1,6 @@
 from flask import Blueprint
 from flask import current_app, request, abort
-from app.wheel import put_photo, get_photo
+from app.wheel import put_photo, get_photo, file_url
 
 
 bp = Blueprint("main", __name__)
@@ -20,7 +20,8 @@ def upload_file():
         except:
             abort(413, 'Save File Failed')
         from flask import make_response
-        resp = make_response({"filename": name})
+        url = file_url(name)
+        resp = make_response({"filename": name, "url": url})
         resp.headers['Content-Type'] = 'application/json'
         return resp
 

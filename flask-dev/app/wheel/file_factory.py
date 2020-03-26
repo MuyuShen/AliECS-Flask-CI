@@ -28,3 +28,9 @@ def get_photo(name):
     bucket = _init_bucket()
     photo = bucket.get_object(name)
     return photo
+
+
+def file_url(filename):
+    endpoint = current_app.config['OSS_ENDPOINT']
+    bucket_name = current_app.config['OSS_SERVER_BUCKET'][current_app.config['ENV']]
+    return "https://{0}.{1}/{2}".format(bucket_name, endpoint, filename)
