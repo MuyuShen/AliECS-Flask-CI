@@ -18,7 +18,7 @@ def create_unique_name():
 
 
 def put_photo(f, name=None):
-    name = name or create_unique_name()
+    name = "{}.jpg".format(name or create_unique_name())
     bucket = _init_bucket()
     bucket.put_object(name, f)
     return name

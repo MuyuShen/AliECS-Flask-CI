@@ -11,8 +11,8 @@ def index():
     return "welcome to CI/CD world 🌏"
 
 
-@bp.route("/upload", methods=['GET', 'POST'])
-def upload_file():
+@bp.route("/upload/jpg", methods=['GET', 'POST'])
+def upload_jpg():
     if request.method == 'POST':
         f = request.files['file'].read()
         try:
