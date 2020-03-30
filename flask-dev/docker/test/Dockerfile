@@ -3,5 +3,5 @@ COPY ./flask-dev /flask-dev
 workdir /flask-dev
 ENV FLASK_APP manage.py
 ENV FLASK_RUN_HOST 0.0.0.0
-ENV FLASK_CONFIG "testing"
+ENV FLASK_ENV testing
 CMD ["flask", "run"]
