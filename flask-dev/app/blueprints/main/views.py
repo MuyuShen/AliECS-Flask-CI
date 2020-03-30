@@ -1,6 +1,6 @@
 from flask import Blueprint
 from flask import current_app, request, abort
-from app.wheel import put_photo, get_photo, file_url
+from app.wheel import put_photo, get_photo, file_url, img_preview_url
 
 
 bp = Blueprint("main", __name__)
@@ -27,7 +27,8 @@ def upload_jpg():
             abort(413, 'Save File Failed')
         from flask import make_response
         url = file_url(name)
-        resp = make_response({"filename": name, "url": url})
+        preview = img_preview_url(name)
+        resp = make_response({"filename": name, "url": url, "preview": preview})
         resp.headers['Content-Type'] = 'application/json'
         return resp
 
