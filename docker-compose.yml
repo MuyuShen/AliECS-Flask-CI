@@ -30,5 +30,4 @@ services:
     links:
       - pro
       - dev
-      - test
   
