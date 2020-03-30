@@ -27,4 +27,8 @@ services:
     build: ./nginx-dev
     ports:
       - "80:80"
+    links:
+      - pro
+      - dev
+      - test
   
