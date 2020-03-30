@@ -14,10 +14,16 @@ def index():
 @bp.route("/upload/jpg", methods=['GET', 'POST'])
 def upload_jpg():
     if request.method == 'POST':
-        f = request.files['file'].read()
+        try:
+            f = request.files['file'].read()
+        except Exception as e:
+            current_app.logger.debug(e)
+            current_app.logger.debug("file_data: {}".format(request.files))
+            abort(406, '上传文件格式错误')
         try:
             name = put_photo(f)
-        except:
+        except Exception as e:
+            current_app.logger.debug(e)
             abort(413, 'Save File Failed')
         from flask import make_response
         url = file_url(name)
