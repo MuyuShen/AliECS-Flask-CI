@@ -135,3 +135,7 @@ dmypy.json
 # Config
 projects.ini
 instance/
+
+# https ssl
+/nginx-dev/*.pem
+/nginx-dev/*.key
